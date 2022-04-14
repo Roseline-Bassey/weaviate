@@ -34,7 +34,7 @@ func (s sortByObjects) Len() int {
 
 func (s sortByObjects) Swap(i, j int) {
 	s.objects[i], s.objects[j] = s.objects[j], s.objects[i]
-	if s.distances != nil {
+	if len(s.distances) > 0 {
 		s.distances[i], s.distances[j] = s.distances[j], s.distances[i]
 	}
 }

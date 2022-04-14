@@ -19,7 +19,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/semi-technologies/weaviate/adapters/repos/db/refcache"
-	"github.com/semi-technologies/weaviate/adapters/repos/db/sorter"
 	"github.com/semi-technologies/weaviate/entities/additional"
 	"github.com/semi-technologies/weaviate/entities/aggregation"
 	"github.com/semi-technologies/weaviate/entities/filters"
@@ -65,12 +64,6 @@ func (db *DB) ClassSearch(ctx context.Context,
 		return nil, errors.Wrapf(err, "object search at index %s", idx.ID())
 	}
 
-	// QUESTION: should we sort here?
-	res, _, err = db.sort(res, nil, totalLimit, params.Sort, false, false)
-	if err != nil {
-		return nil, err
-	}
-
 	return db.enrichRefsForList(ctx,
 		storobj.SearchResults(db.getStoreObjects(res, params.Pagination), params.AdditionalProperties),
 		params.Properties, params.AdditionalProperties)
@@ -101,12 +94,6 @@ func (db *DB) VectorClassSearch(ctx context.Context,
 
 	if totalLimit < 0 {
 		params.Pagination.Limit = len(res)
-	}
-
-	// QUESTION: should we sort here?
-	res, dists, err = db.sort(res, dists, totalLimit, params.Sort, false, false)
-	if err != nil {
-		return nil, err
 	}
 
 	return db.enrichRefsForList(ctx,
@@ -211,12 +198,6 @@ func (d *DB) objectSearch(ctx context.Context, offset, limit int,
 		}
 	}
 
-	// QUESTION: sort all results or just add already sorted class objects
-	found, _, err := d.sort(found, nil, limit, sort, false, false)
-	if err != nil {
-		return nil, err
-	}
-
 	return d.getSearchResults(storobj.SearchResults(found, additional), offset, limit), nil
 }
 
@@ -282,10 +263,4 @@ func (db *DB) getLimit(limit int) int {
 		return int(db.config.QueryLimit)
 	}
 	return limit
-}
-
-func (d *DB) sort(objects []*storobj.Object, distances []float32,
-	limit int, sort []filters.Sort, keywordRanking, sortByDistance bool) ([]*storobj.Object, []float32, error) {
-	return sorter.New(d.schemaGetter.GetSchemaSkipAuth()).
-		Sort(objects, distances, limit, sort, keywordRanking, sortByDistance)
 }
